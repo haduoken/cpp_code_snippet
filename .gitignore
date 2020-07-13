@@ -1,0 +1,14 @@
+cmake-build-debug/
+.idea/
+*.log
+build/
+*.tar.gz
+tmp_*/
+Stargazer/
+*.pyc
+frames.gv
+frames.pdf
+*.bag
+log
+.vscode/
+CATKIN_IGNORE

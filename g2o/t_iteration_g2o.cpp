@@ -307,14 +307,15 @@ int main(int argc, char *argv[]) {
   Eigen::Matrix3d real_r;
   //  real_r = Eigen::Matrix3d::Identity();
   real_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d real_t(0.1, 0.1, 0.1);
+  Eigen::Vector3d real_t(0.1, 0, 0);
 
   Sophus::SE3 real_trans(real_r, real_t);
+  cout << real_trans << endl;
 
   Eigen::Matrix3d init_r;
   init_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
   //  init_r = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d init_t(0.2, 0.2, 0.2);
+  Eigen::Vector3d init_t(0.2, 0, 0);
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
   std::cout << "init trans is " << trans << std::endl;
@@ -337,9 +338,9 @@ int main(int argc, char *argv[]) {
   optimizer.setVerbose(true);
 
   //添加顶点
-  VertexSE3 *v = new VertexSE3();
+  TransformVertex *v = new TransformVertex();
   v->setId(0);
-  v->setEstimate(Eigen::Isometry3d::Identity());
+  v->setEstimate(trans);
   v->setFixed(false);
   optimizer.addVertex(v);
 
@@ -350,6 +351,7 @@ int main(int argc, char *argv[]) {
     px(0) = px_(0) + n(e);
     px(1) = px_(1) + n(e);
     px(2) = px_(2) + n(e);
+    NewAddCornerConstraint(px, p1, p2, 0);
     //    std::cout << "insert pt" << px << std::endl;
     pxs.push_back(px);
     // 添加边
@@ -360,10 +362,10 @@ int main(int argc, char *argv[]) {
     edge->setInformation(Eigen::Matrix<double, 1, 1>(1));
     //    edge->setMeasurement(0);
     // 添加鲁棒核
-    {
-      g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber();
-      edge->setRobustKernel(rk);
-    }
+    //    {
+    //      g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber();
+    //      edge->setRobustKernel(rk);
+    //    }
     optimizer.addEdge(edge);
   }
   // 执行优化
@@ -379,10 +381,10 @@ int main(int argc, char *argv[]) {
   //    Vector3d current_test = estimate * test_pt;
   //    std::cout << "current test at " << current_test << endl;
   //  }
-  Eigen::Isometry3d estimate = v->estimate();
-  Sophus::SE3 se3_estimate(estimate.rotation(), estimate.translation());
-  test_pt = se3_estimate * test_pt;
-  cout << "final estimate " << se3_estimate << endl;
+  //  Eigen::Isometry3d estimate = v->estimate();
+  //  Sophus::SE3 se3_estimate(estimate.rotation(), estimate.translation());
+  //  test_pt = se3_estimate * test_pt;
+  cout << "final estimate " << v->estimate() << endl;
   cout << "testpt at " << test_pt << endl;
   cout << "real trans is " << real_trans.inverse() << endl;
 }

@@ -14,29 +14,26 @@
 using namespace std;
 using namespace g2o;
 
-//class TransformVertex : public g2o::BaseVertex<6, Sophus::SE3> {
-// public:
-//  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-//  TransformVertex() {}
-//  virtual bool read(istream &is) { return false; }
-//  virtual bool write(ostream &os) const { return false; }
-//  virtual void setToOriginImpl() {}
-//  virtual void oplusImpl(const double *update) override {
-//    Eigen::Map<const g2o::Vector6d> v(update);
-//    Eigen::Isometry3d increment = internal::fromVectorMQT(v);
-//    std::cout << update[0] << std::endl;
-//    std::cout << update[1] << std::endl;
-//    std::cout << update[2] << std::endl;
-//    std::cout << update[3] << std::endl;
-//    std::cout << update[4] << std::endl;
-//    std::cout << update[5] << std::endl;
-//    //    g2o::Vector6d v(update);
-//    //    Sophus::SE3 update_se3 = Sophus::SE3::exp(v);
-//    //    std::cout << "update is " << v(0, 0) << v(0, 1) << v(0, 2) << v(0, 3) << v(0, 4) << v(0, 5) << std::endl;
-//    _estimate = Sophus::SE3::exp(v) * _estimate;
-//  }
-//};
-class Point2LineEdge : public g2o::BaseUnaryEdge<1, double, VertexSE3> {
+class TransformVertex : public g2o::BaseVertex<6, Sophus::SE3> {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  TransformVertex() {}
+  virtual bool read(istream &is) { return false; }
+  virtual bool write(ostream &os) const { return false; }
+  virtual void setToOriginImpl() { _estimate = Sophus::SE3(); }
+  virtual void oplusImpl(const double *update) override {
+    // 更新量是根据雅各比的顺序来的, 先r后t
+    Sophus::SE3 up(Sophus::SO3(update[0], update[1], update[2]), Eigen::Vector3d(update[3], update[4], update[5]));
+    auto old_estimate = _estimate;
+    _estimate = up * _estimate;
+    std::cout << "update is" << up << " estimate from " << old_estimate << " to " << _estimate << std::endl;
+    //    g2o::Vector6d v(update);
+    //    Sophus::SE3 update_se3 = Sophus::SE3::exp(v);
+    //    std::cout << "update is " << v(0, 0) << v(0, 1) << v(0, 2) << v(0, 3) << v(0, 4) << v(0, 5) << std::endl;
+    //    _estimate = Sophus::SE3::exp(v) * _estimate;
+  }
+};
+class Point2LineEdge : public g2o::BaseUnaryEdge<1, double, TransformVertex> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
@@ -56,7 +53,7 @@ class Point2LineEdge : public g2o::BaseUnaryEdge<1, double, VertexSE3> {
   }
 
   void computeError() {
-    const VertexSE3 *v_trans = static_cast<const VertexSE3 *>(_vertices[0]);
+    const TransformVertex *v_trans = static_cast<const TransformVertex *>(_vertices[0]);
     Eigen::Vector3d current_p0 = v_trans->estimate() * p0_;
     Eigen::Vector3d v10 = current_p0 - p1_;
 
@@ -69,7 +66,7 @@ class Point2LineEdge : public g2o::BaseUnaryEdge<1, double, VertexSE3> {
 
   // 计算雅各比
   virtual void linearizeOplus() {
-    const VertexSE3 *v_trans = static_cast<const VertexSE3 *>(_vertices[0]);
+    const TransformVertex *v_trans = static_cast<const TransformVertex *>(_vertices[0]);
     Eigen::Vector3d current_p0 = v_trans->estimate() * p0_;
     Eigen::Vector3d v10 = current_p0 - p1_;
 
@@ -85,12 +82,12 @@ class Point2LineEdge : public g2o::BaseUnaryEdge<1, double, VertexSE3> {
     lie_algebra_jacobin.block<3, 3>(0, 3) = -Sophus::SO3::hat(p0_);
 
     Eigen::Matrix<double, 1, 6> line_jacobin = coeff_matrix * lie_algebra_jacobin;
-    _jacobianOplusXi(0, 0) = line_jacobin(0, 0);
-    _jacobianOplusXi(0, 1) = line_jacobin(0, 1);
-    _jacobianOplusXi(0, 2) = line_jacobin(0, 2);
-    _jacobianOplusXi(0, 3) = line_jacobin(0, 3);
-    _jacobianOplusXi(0, 4) = line_jacobin(0, 4);
-    _jacobianOplusXi(0, 5) = line_jacobin(0, 5);
+    _jacobianOplusXi(0, 0) = line_jacobin(0, 3);
+    _jacobianOplusXi(0, 1) = line_jacobin(0, 4);
+    _jacobianOplusXi(0, 2) = line_jacobin(0, 5);
+    _jacobianOplusXi(0, 3) = line_jacobin(0, 0);
+    _jacobianOplusXi(0, 4) = line_jacobin(0, 1);
+    _jacobianOplusXi(0, 5) = line_jacobin(0, 2);
   }
 
   Eigen::Vector3d p0_, p1_, p2_, v12_;

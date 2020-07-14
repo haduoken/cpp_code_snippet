@@ -305,21 +305,21 @@ int main(int argc, char *argv[]) {
 
   Eigen::Matrix3d real_r;
   //  real_r = Eigen::Matrix3d::Identity();
-  real_r = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ());
+  real_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
   Eigen::Vector3d real_t(0, 0, 0.1);
 
   Sophus::SE3 real_trans(real_r, real_t);
 
   Eigen::Matrix3d init_r;
-  init_r = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ());
+  init_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
   //  init_r = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d init_t(0.1, 0.2, 0.3);
+  Eigen::Vector3d init_t(0, 0, 0.2);
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
   std::cout << "init trans is " << trans << std::endl;
   // 首先在p1,p2的线上面构造一些点
   uniform_real_distribution<double> u(-5, 5);  //随机数分布对象
-  normal_distribution<double> n(0, 0.1);
+  normal_distribution<double> n(0, 0);
   default_random_engine e;
   vector<Vector3d> pxs;
 
@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
   v->setFixed(false);
   optimizer.addVertex(v);
 
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 10; i++) {
     Eigen::Vector3d px = p1 + (p2 - p1) * u(e);
     Eigen::Vector3d px_(px(0), px(1), px(2));
     px_ = real_trans * px_;
@@ -351,7 +351,6 @@ int main(int argc, char *argv[]) {
     px(2) = px_(2) + n(e);
     //    std::cout << "insert pt" << px << std::endl;
     pxs.push_back(px);
-    NewAddCornerConstraint(px, p1, p2, 0);
     // 添加边
     Point2LineEdge *edge = new Point2LineEdge(px, p1, p2);
     edge->setId(i);
@@ -359,6 +358,7 @@ int main(int argc, char *argv[]) {
     // information必须设置
     edge->setInformation(Eigen::Matrix<double, 1, 1>(1));
     //    edge->setMeasurement(0);
+    // 添加鲁棒核
     optimizer.addEdge(edge);
   }
   // 执行优化
@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
   Vector3d test_pt(0, 0.5, 0);
   test_pt = real_trans * test_pt;
   optimizer.initializeOptimization();
-  optimizer.optimize(100);
+  optimizer.optimize(30);
   //  for (int i = 0; i < 30; i++) {
   //    optimizer.optimize(1);
   //    Sophus::SE3 estimate = v->estimate();
@@ -375,6 +375,9 @@ int main(int argc, char *argv[]) {
   //    std::cout << "current test at " << current_test << endl;
   //  }
   Eigen::Isometry3d estimate = v->estimate();
-  cout << "final estimate " << estimate.matrix() << endl;
+  Sophus::SE3 se3_estimate(estimate.rotation(), estimate.translation());
+  test_pt = se3_estimate * test_pt;
+  cout << "final estimate " << se3_estimate << endl;
+  cout << "testpt at " << test_pt << endl;
   cout << "real trans is " << real_trans.inverse() << endl;
 }

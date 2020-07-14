@@ -39,7 +39,7 @@ target_link_libraries(test_iteration ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${Open
 add_executable(test_iteration1 eigen/t_iteration1.cpp)
 target_link_libraries(test_iteration1 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_executable(test_iteration2 g2o/t_iteration2.cpp)
+add_executable(test_iteration2 g2o/t_iteration_g2o.cpp)
 target_link_libraries(test_iteration2 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
 
 

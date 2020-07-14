@@ -270,19 +270,19 @@ bool NewLMOptimization() {
 
 int main(int argc, char *argv[]) {
   Eigen::Vector3d p1(0, 0, 0);
-  Eigen::Vector3d p2(1, 0, 0);
+  Eigen::Vector3d p2(0, 1, 0);
 
   Eigen::Matrix3d real_r;
   //  real_r = Eigen::Matrix3d::Identity();
-  real_r = Eigen::AngleAxisd(0.15, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d real_t(0, 0.1, 0.1);
+  real_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
+  Eigen::Vector3d real_t(0, 0, 0.1);
 
   Sophus::SE3 real_trans(real_r, real_t);
 
   Eigen::Matrix3d init_r;
-  init_r = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ());
+  init_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
   //  init_r = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d init_t(0.1, 0.1, 0);
+  Eigen::Vector3d init_t(0, 0, 0.2);
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
   std::cout << "init trans is " << trans << std::endl;
@@ -291,7 +291,7 @@ int main(int argc, char *argv[]) {
   normal_distribution<double> n(0, 0);
   default_random_engine e;
   vector<Vector3d> pxs;
-  for (int i = 0; i < 30; i++) {
+  for (int i = 0; i < 10; i++) {
     Eigen::Vector3d px = p1 + (p2 - p1) * u(e);
     Eigen::Vector3d px_(px(0), px(1), px(2));
     px_ = real_trans * px_;
@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
   }
 
   // 进行30次迭代
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 30; i++) {
     for (auto pt : pxs) {
       pt = trans * pt;
       AddCornerConstraint(pt, p1, p2, i);
@@ -319,7 +319,7 @@ int main(int argc, char *argv[]) {
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
 
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 30; i++) {
     for (auto pt : pxs) {
       //      pt = trans * pt;
       NewAddCornerConstraint(pt, p1, p2, i);

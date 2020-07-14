@@ -21,6 +21,7 @@ INCLUDE_DIRECTORIES(
         ${G2O_INCLUDE_DIR}
         ${Sophus_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
+        "/opt/ros/kinetic/include"
         )
 
 add_executable(test_app main.cpp)
@@ -37,6 +38,9 @@ target_link_libraries(test_iteration ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${Open
 
 add_executable(test_iteration1 eigen/t_iteration1.cpp)
 target_link_libraries(test_iteration1 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
+
+add_executable(test_iteration2 g2o/t_iteration2.cpp)
+target_link_libraries(test_iteration2 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
 
 
 add_executable(01_basic_usage eigen/01_basic_usage.cpp)

@@ -1,9 +1,31 @@
-#include <sophus/se3.h>
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <random>
 #include <vector>
+
+#include <Eigen/Core>
+#include <cmath>
+#include <iostream>
+#include <opencv2/core/core.hpp>
+
+// g2o相关
+#include <core/block_solver.h>
+#include <core/eigen_types.h>
+#include <core/optimization_algorithm_levenberg.h>
+#include <solvers/dense/linear_solver_dense.h>
+#include <types/slam3d/edge_se3.h>
+#include "type_p2_line.h"
+
+//然后引入核心控件中的求解器
+
+//引入各种优化算法的头文件，这里有好多可以引进，用啥引用啥就是了
+//#include <core/optimization_algorithm_dogleg.h>        //include进核心构件中的DL优化算法头文件
+//#include <core/optimization_algorithm_gauss_newton.h>  //include进核心构件中的GN优化算法头文件
+//#include <core/optimization_algorithm_levenberg.h>     //include进核心构件中的LM优化算法头文件
+
+//引入求解器的求解方法,注意这里不是core文件中的，而是solvers中的稠密中的线性稠密求解器
+//#include <solvers/dense/linear_solver_dense.h>
 
 using namespace std;
 using namespace Eigen;
@@ -20,6 +42,8 @@ float LM_param_ = 1;
 const float minGradient = 1e-4;
 double lr = 1;
 bool add_s = false;
+
+// 1,double是误差的维度和类型, VertexSE3是连接的顶点的类型
 
 bool LMOptimization() {
   int dimension = pts.size();
@@ -61,7 +85,6 @@ bool LMOptimization() {
     //            std::cout<<"jacobin : "<<arx<<", "<<ary<<", "<<arz<<", "<<atx<<",
     //            "<<aty<<", "<<atz<<", "<<d2<<std::endl;
   }
-  totle_dis /= dimension;
   std::cout << "[1] totle dis : " << totle_dis << std::endl;
   //    if (totle_dis < totole_loss_) totole_loss_ = totle_dis;
   //    else return true;
@@ -72,10 +95,11 @@ bool LMOptimization() {
   auto matLM = matAtA + matC;
   cv::solve(matLM, matAtB, matX, cv::DECOMP_QR);
 
+  // 计算rho
+
   Sophus::SE3 update(Sophus::SO3(matX.at<float>(3, 0), matX.at<float>(4, 0), matX.at<float>(5, 0)),
                      Eigen::Vector3d(matX.at<float>(0, 0), matX.at<float>(1, 0), matX.at<float>(2, 0)));
   trans = update * trans;
-
 
   //    std::cout<<"revise : "<<matX.at<float>(0, 0)
   //            <<", "<<matX.at<float>(1, 0)
@@ -121,11 +145,13 @@ bool AddCornerConstraint(Vector3d &p0, Vector3d &p1, Vector3d &p2, int itorCount
   coeff.push_back(coeff_matrix(0, 1));
   coeff.push_back(coeff_matrix(0, 2));
   coeff.push_back(s * distance);
+  coeff.push_back(distance);
   coeffs.push_back(coeff);
 
   pts.push_back(p0);
   return true;
 }
+
 bool NewAddCornerConstraint(Vector3d &p0, Vector3d &p1, Vector3d &p2, int itorCount) {
   Eigen::Vector3d current_p0 = trans * p0;
   Eigen::Vector3d v12 = p2 - p1;
@@ -268,30 +294,55 @@ bool NewLMOptimization() {
   return false;
 }
 
+void sophus_se3_2_isometry3(Sophus::SE3 &tran_in) {
+  Eigen::Isometry3d iso = Eigen::Isometry3d::Identity();
+  iso.matrix() = tran_in.matrix();
+}
+
 int main(int argc, char *argv[]) {
   Eigen::Vector3d p1(0, 0, 0);
-  Eigen::Vector3d p2(1, 0, 0);
+  Eigen::Vector3d p2(0, 1, 0);
 
   Eigen::Matrix3d real_r;
   //  real_r = Eigen::Matrix3d::Identity();
-  real_r = Eigen::AngleAxisd(0.15, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d real_t(0, 0.1, 0.1);
+  real_r = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ());
+  Eigen::Vector3d real_t(0, 0, 0.1);
 
   Sophus::SE3 real_trans(real_r, real_t);
 
   Eigen::Matrix3d init_r;
-  init_r = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ());
+  init_r = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ());
   //  init_r = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d init_t(0.1, 0.1, 0);
+  Eigen::Vector3d init_t(0.1, 0.2, 0.3);
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
   std::cout << "init trans is " << trans << std::endl;
   // 首先在p1,p2的线上面构造一些点
   uniform_real_distribution<double> u(-5, 5);  //随机数分布对象
-  normal_distribution<double> n(0, 0);
+  normal_distribution<double> n(0, 0.1);
   default_random_engine e;
   vector<Vector3d> pxs;
-  for (int i = 0; i < 30; i++) {
+
+  // 定义优化问题
+  typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 1>> Block;
+  // 线性方程求解器
+  Block::LinearSolverType *linearSolver = new g2o::LinearSolverDense<Block::PoseMatrixType>();
+  Block *solver_ptr = new Block(linearSolver);
+
+  // 梯度下降方法
+  g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+  g2o::SparseOptimizer optimizer;
+  optimizer.setAlgorithm(solver);
+  optimizer.setVerbose(true);
+
+  //添加顶点
+  VertexSE3 *v = new VertexSE3();
+  v->setId(0);
+  v->setEstimate(Eigen::Isometry3d::Identity());
+  v->setFixed(false);
+  optimizer.addVertex(v);
+
+  for (int i = 0; i < 1; i++) {
     Eigen::Vector3d px = p1 + (p2 - p1) * u(e);
     Eigen::Vector3d px_(px(0), px(1), px(2));
     px_ = real_trans * px_;
@@ -300,35 +351,30 @@ int main(int argc, char *argv[]) {
     px(2) = px_(2) + n(e);
     //    std::cout << "insert pt" << px << std::endl;
     pxs.push_back(px);
+    NewAddCornerConstraint(px, p1, p2, 0);
+    // 添加边
+    Point2LineEdge *edge = new Point2LineEdge(px, p1, p2);
+    edge->setId(i);
+    edge->setVertex(0, v);
+    // information必须设置
+    edge->setInformation(Eigen::Matrix<double, 1, 1>(1));
+    //    edge->setMeasurement(0);
+    optimizer.addEdge(edge);
   }
+  // 执行优化
+  cout << "start optimization" << endl;
 
-  // 进行30次迭代
-  for (int i = 0; i < 1; i++) {
-    for (auto pt : pxs) {
-      pt = trans * pt;
-      AddCornerConstraint(pt, p1, p2, i);
-    }
-    bool ret = LMOptimization();
-    coeffs.clear();
-    pts.clear();
-  }
-  std::cout << " real trans is" << real_trans.inverse() << std::endl;
-  std::cout << " [1] trans is" << trans << std::endl;
-
-  // 恢复trans用另一种方法迭代
-  trans = Sophus::SE3(init_r, init_t);
-  trans = trans.inverse();
-
-  for (int i = 0; i < 1; i++) {
-    for (auto pt : pxs) {
-      //      pt = trans * pt;
-      NewAddCornerConstraint(pt, p1, p2, i);
-    }
-    bool ret = NewLMOptimization();
-    jacobians.clear();
-    fs.clear();
-    pts.clear();
-  }
-  std::cout << " [2] trans is" << trans << std::endl;
-  std::cout << " real trans is" << real_trans.inverse() << std::endl;
+  Vector3d test_pt(0, 0.5, 0);
+  test_pt = real_trans * test_pt;
+  optimizer.initializeOptimization();
+  optimizer.optimize(100);
+  //  for (int i = 0; i < 30; i++) {
+  //    optimizer.optimize(1);
+  //    Sophus::SE3 estimate = v->estimate();
+  //    Vector3d current_test = estimate * test_pt;
+  //    std::cout << "current test at " << current_test << endl;
+  //  }
+  Eigen::Isometry3d estimate = v->estimate();
+  cout << "final estimate " << estimate.matrix() << endl;
+  cout << "real trans is " << real_trans.inverse() << endl;
 }

@@ -13,6 +13,7 @@
 #include <core/block_solver.h>
 #include <core/eigen_types.h>
 #include <core/optimization_algorithm_levenberg.h>
+#include <core/robust_kernel_impl.h>
 #include <solvers/dense/linear_solver_dense.h>
 #include <types/slam3d/edge_se3.h>
 #include "type_p2_line.h"
@@ -306,14 +307,14 @@ int main(int argc, char *argv[]) {
   Eigen::Matrix3d real_r;
   //  real_r = Eigen::Matrix3d::Identity();
   real_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
-  Eigen::Vector3d real_t(0, 0, 0.1);
+  Eigen::Vector3d real_t(0.1, 0.1, 0.1);
 
   Sophus::SE3 real_trans(real_r, real_t);
 
   Eigen::Matrix3d init_r;
   init_r = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
   //  init_r = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d init_t(0, 0, 0.2);
+  Eigen::Vector3d init_t(0.2, 0.2, 0.2);
   trans = Sophus::SE3(init_r, init_t);
   trans = trans.inverse();
   std::cout << "init trans is " << trans << std::endl;
@@ -359,6 +360,10 @@ int main(int argc, char *argv[]) {
     edge->setInformation(Eigen::Matrix<double, 1, 1>(1));
     //    edge->setMeasurement(0);
     // 添加鲁棒核
+    {
+      g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber();
+      edge->setRobustKernel(rk);
+    }
     optimizer.addEdge(edge);
   }
   // 执行优化

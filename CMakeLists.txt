@@ -11,6 +11,7 @@ find_package(Eigen3)
 find_package(G2O REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(OpenCV REQUIRED QUIET)
+find_package(Ceres REQUIRED)
 
 message(STATUS         ${PCL_INCLUDE_DIRS})
 message(STATUS                ${G2O_INCLUDE_DIR})
@@ -22,10 +23,20 @@ INCLUDE_DIRECTORIES(
         ${Sophus_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         "/opt/ros/kinetic/include"
+        ${CERES_INCLUDE_DIRS}
         )
 
 add_executable(test_app main.cpp)
 target_link_libraries(test_app ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+
+add_executable(01_hash_map cpp_usage/01_hash_map.cpp)
+add_executable(02_forward_as_tuple cpp_usage/02_forward_as_tuple.cpp)
+
+add_executable(01_gtsam gtsam/01_gtsam.cpp)
+target_link_libraries(01_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+
+add_executable(02_gtsam gtsam/02_gtsam.cpp)
+target_link_libraries(02_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 
 add_executable(test_icp pcl/test_icp.cpp)
 target_link_libraries(test_icp ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
@@ -42,9 +53,31 @@ target_link_libraries(test_iteration1 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${Ope
 add_executable(test_iteration2 g2o/t_iteration_g2o.cpp)
 target_link_libraries(test_iteration2 ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
 
+add_executable(test_residual ceres/04_test_residual.cpp)
+target_link_libraries(test_residual ${CERES_LIBRARIES})
+
+add_executable(fit_plane ceres/05_fit_plane.cpp ceres/eigenpose.cpp)
+target_link_libraries(fit_plane ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(06_relative_pose ceres/06_relative_pose.cpp ceres/eigenpose.cpp)
+target_link_libraries(06_relative_pose ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(07_fit_rotation ceres/07_fit_rotation.cpp ceres/eigenpose.cpp)
+target_link_libraries(07_fit_rotation ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(08_icp_rotation ceres/08_icp_rotation.cpp ceres/eigenpose.cpp)
+target_link_libraries(08_icp_rotation ${CERES_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(01_basic_usage eigen/01_basic_usage.cpp)
 target_link_libraries(01_basic_usage ${G2O_LIBRARIES})
 
 add_executable(02_block eigen/02_block.cpp)
 target_link_libraries(02_block ${G2O_LIBRARIES})
+
+add_executable(03_test_pose eigen/03_test_pose.cpp)
+
+
+add_executable(03_use_deque cpp_usage/03_use_deque.cpp)
+
+add_executable(pcl_deque pcl/pcl_deque.cpp)
+target_link_libraries(pcl_deque ${PCL_LIBRARIES} )

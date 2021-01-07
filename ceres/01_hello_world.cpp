@@ -16,11 +16,12 @@ int main(int argc, char *argv[]) {
   ceres::Problem problem;
 
   double initail_x = 5.0;
-  double x = initail_x;
 
   // 将自己的函数包装成cost_function
   ceres::CostFunction *cost_function = new ceres::AutoDiffCostFunction<MyCostFunc, 1, 1>(new MyCostFunc);
 
+  double x1 = initail_x;
+  double x2 =
   problem.AddResidualBlock(cost_function, nullptr, &x);
 
   // 使用

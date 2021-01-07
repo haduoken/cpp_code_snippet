@@ -38,6 +38,9 @@ target_link_libraries(01_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 add_executable(02_gtsam gtsam/02_gtsam.cpp)
 target_link_libraries(02_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 
+add_executable(03_pose3_estimate gtsam/03_pose3_estimate.cpp)
+target_link_libraries(03_pose3_estimate ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+
 add_executable(test_icp pcl/test_icp.cpp)
 target_link_libraries(test_icp ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 

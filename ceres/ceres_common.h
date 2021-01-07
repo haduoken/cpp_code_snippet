@@ -297,6 +297,7 @@ class RotationICPFactor : public ceres::SizedCostFunction<3, 4> {
       if (jacobians[0]) {
         Eigen::Map<Eigen::Matrix<double, 3, 4, Eigen::RowMajor>> jacobian(jacobians[0]);
 
+        // 对tangent space的导数应该体现在虚部上面(param对应的部分)
         jacobian.rightCols<3>() = -R * skewSymmetric(fi_);
 
         jacobian.leftCols<1>().setZero();

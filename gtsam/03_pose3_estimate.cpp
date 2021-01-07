@@ -26,7 +26,7 @@
 #include <vector>
 
 // In planar SLAM example we use Pose2 variables (x, y, theta) to represent the robot poses
-#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 
 // We will use simple integer Keys to refer to the robot poses.
 #include <gtsam/inference/Key.h>
@@ -36,8 +36,8 @@
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // We will also use a Between Factor to encode the loop closure constraint
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 // The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
 // nonlinear functions around an initial linearization point, then solve the linear system
@@ -46,32 +46,48 @@
 // for each variable, held in a Values container.
 #include <gtsam/nonlinear/Values.h>
 
-
 using namespace std;
 using namespace gtsam;
 
-int main()
-{
+Pose3 GetPose3(double x, double y, double z, double roll, double pitch, double yaw) {
+  return gtsam::Pose3(gtsam::Rot3::RzRyRx(roll, pitch, yaw), gtsam::Point3(x, y, z));
+}
 
+int main() {
   //　向量保存好模拟的位姿和测量，到时候一个个往isam2里填加
-  std::vector< BetweenFactor<Pose2> > gra;
-  std::vector< Pose2 > initPose;
+  std::vector<BetweenFactor<Pose3> > gra;
+  std::vector<Pose3> initPose, realPose;
 
   // For simplicity, we will use the same noise model for odometry and loop closures
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  double noiseScore = 0.2;
+  gtsam::Vector Vector6(6);
+  Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+  noiseModel::Diagonal::shared_ptr constraintNoise = noiseModel::Diagonal::Variances(Vector6);
 
-  gra.push_back(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));
-  gra.push_back(BetweenFactor<Pose2>(2, 3, Pose2(2, 0, M_PI_2), model));
-  gra.push_back(BetweenFactor<Pose2>(3, 4, Pose2(2, 0, M_PI_2), model));
-  gra.push_back(BetweenFactor<Pose2>(4, 5, Pose2(2, 0, M_PI_2), model));
-  gra.push_back(BetweenFactor<Pose2>(5, 2, Pose2(2, 0, M_PI_2), model));
+  //  realPose.push_back(GetPose3(0, 0, 0, 0, 0, 0));
+  //  realPose.push_back(GetPose3(0, 0, 0, 0, 0, 0));
+  //  realPose.push_back(GetPose3(2, 0, 0, 0, 0, 0));
+  //  realPose.push_back(GetPose3(4, 0, 0, 0, 0, 0));
+  //  realPose.push_back(GetPose3(4, 2, 0, 0, 0, M_PI_2));
+  //  realPose.push_back(GetPose3(2, 2, 0, 0, 0, M_PI));
+  //
+  //  cout<<" 1 to 2 "<<realPose[1].inverse() * realPose[2]<<endl;
+  //  cout<<" 2 to 3 "<<realPose[2].inverse() * realPose[3]<<endl;
+  //  cout<<" 3 to 4 "<<realPose[3].inverse() * realPose[4]<<endl;
+  //  cout<<" 4 to 5 "<<realPose[4].inverse() * realPose[5]<<endl;
+  //  cout<<" 5 to 2 "<<realPose[5].inverse() * realPose[2]<<endl;
 
-  initPose.push_back(Pose2(0.5, 0.0,  0.2   ));
-  initPose.push_back( Pose2(2.3, 0.1, -0.2   ));
-  initPose.push_back( Pose2(4.1, 0.1,  M_PI_2));
-  initPose.push_back( Pose2(4.0, 2.0,  M_PI  ));
-  initPose.push_back( Pose2(2.1, 2.1, -M_PI_2));
+  gra.push_back(BetweenFactor<Pose3>(1, 2, GetPose3(2.5, 0, 0, 0, 0, 0), constraintNoise));
+  gra.push_back(BetweenFactor<Pose3>(2, 3, GetPose3(2, 0, 0, 0, 0, 0), constraintNoise));
+  gra.push_back(BetweenFactor<Pose3>(3, 4, GetPose3(0, 2, 0, 0, 0, M_PI_2), constraintNoise));
+  gra.push_back(BetweenFactor<Pose3>(4, 5, GetPose3(0, 2, 0, 0, 0, M_PI_2), constraintNoise));
+  gra.push_back(BetweenFactor<Pose3>(5, 2, GetPose3(0, 2, 0, 0, 0, M_PI), constraintNoise));
 
+  initPose.push_back(GetPose3(0, 0.0, 0, 0, 0, 0));
+  initPose.push_back(GetPose3(1.8, 0, 0, 0, 0, 0));
+  initPose.push_back(GetPose3(4.2, 0, 0, 0, 0, 0));
+  initPose.push_back(GetPose3(4.1, 2.1, 0, 0, 0, M_PI_2));
+  initPose.push_back(GetPose3(2.1, 2.2, 0, 0, 0, M_PI));
 
   // Create an iSAM2 object. Unlike iSAM1, which performs periodic batch steps to maintain proper linearization
   // and efficient variable ordering, iSAM2 performs partial relinearization/reordering at each step. A parameter
@@ -89,26 +105,34 @@ int main()
   Values initialEstimate;
 
   // the first pose don't need to update
-  for( int i =0; i<5 ;i++)
-  {
+  for (int i = 0; i < 5; i++) {
     // Add an initial guess for the current pose
-    initialEstimate.insert(i+1, initPose[i]);
+    initialEstimate.insert(i + 1, initPose[i]);
 
-    if(i == 0)
-    {
+    if (i == 0) {
       //  Add a prior on the first pose, setting it to the origin
       // A prior factor consists of a mean and a noise model (covariance matrix)
-      noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-      graph.push_back(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
+      double noiseScore = 0.00002;
+      gtsam::Vector Vector6(6);
+      Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+      noiseModel::Diagonal::shared_ptr prior_noise = noiseModel::Diagonal::Variances(Vector6);
+      graph.push_back(PriorFactor<Pose3>(1, GetPose3(0, 0, 0, 0, 0, 0), prior_noise));
 
-    }else
-    {
-
-      graph.push_back(gra[i-1]);  // ie: when i = 1 , robot at pos2,  there is a edge gra[0] between pos1 and pos2
-      if(i == 4)
-      {
+    } else {
+      graph.push_back(gra[i - 1]);  // ie: when i = 1 , robot at pos2,  there is a edge gra[0] between pos1 and pos2
+      if (i == 2) {
+        double noiseScore = 0.2;
+        gtsam::Vector Vector6(6);
+        Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
+        noiseModel::Diagonal::shared_ptr prior_noise = noiseModel::Diagonal::Variances(Vector6);
+        graph.push_back(PriorFactor<Pose3>(2, GetPose3(1.5, 0, 0, 0, 0, 0), prior_noise));
+        // 不能仅添加部分约束
+        //        graph.push_back(PriorFactor<Point3>(2, Point3(1.7, 0, 0), prior_noise));
+      }
+      if (i == 4) {
         graph.push_back(gra[4]);  //  when robot at pos5, there two edge, one is pos4 ->pos5, another is pos5->pos2  (grad[4])
       }
+
       isam.update(graph, initialEstimate);
       isam.update();
 

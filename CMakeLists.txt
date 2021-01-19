@@ -84,3 +84,6 @@ add_executable(03_use_deque cpp_usage/03_use_deque.cpp)
 
 add_executable(pcl_deque pcl/pcl_deque.cpp)
 target_link_libraries(pcl_deque ${PCL_LIBRARIES} )
+
+add_executable(operator_overload cpp_usage/operator_overload.cpp)
+add_executable(parse_png_head cpp_usage/parse_png_head.cpp)

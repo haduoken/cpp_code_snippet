@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
   //  全帧温度以16位有符号整数数组表示, 温度浮点值=温度整数值/Slope+Offset
   for (int row = 0; row < png_temp_header1.height; row++) {
     for (int col = 0; col < png_temp_header1.width; col++) {
-      int data_index = row * png_temp_header1.height + col;
+      int data_index = row * png_temp_header1.width + col;
       s16 data = temp_data_buf[data_index];
       float temperature = (float)data / dfh.Slope + dfh.Offset;
       cout << "for row " << row << " col " << col << " temper is " << temperature << endl;

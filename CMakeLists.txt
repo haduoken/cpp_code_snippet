@@ -15,6 +15,7 @@ find_package(Ceres REQUIRED)
 
 message(STATUS         ${PCL_INCLUDE_DIRS})
 message(STATUS                ${G2O_INCLUDE_DIR})
+message(WARNING "Eigen Version": ${EIGEN_WORLD_VERSION}.${EIGEN_MAJOR_VERSION}.${EIGEN_MINOR_VERSION})
 INCLUDE_DIRECTORIES(
         ${EIGEN3_INCLUDE_DIR}
         ${GTSAM_INCLUDE_DIR}
@@ -32,14 +33,25 @@ target_link_libraries(test_app ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 add_executable(01_hash_map cpp_usage/01_hash_map.cpp)
 add_executable(02_forward_as_tuple cpp_usage/02_forward_as_tuple.cpp)
 
+# GTSAM这一块
 add_executable(01_gtsam gtsam/01_gtsam.cpp)
 target_link_libraries(01_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
-
 add_executable(02_gtsam gtsam/02_gtsam.cpp)
 target_link_libraries(02_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
-
 add_executable(03_pose3_estimate gtsam/03_pose3_estimate.cpp)
 target_link_libraries(03_pose3_estimate ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(04_test_prior gtsam/04_test_prior.cpp)
+target_link_libraries(04_test_prior ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(05_optimize_odom_and_prior gtsam/05_optimize_odom_and_prior.cpp)
+target_link_libraries(05_optimize_odom_and_prior ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(06_test_noise_meaning gtsam/06_test_noise_meaning.cpp)
+target_link_libraries(06_test_noise_meaning ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(07_test_gps_fusion gtsam/07_test_gps_fusion.cpp)
+target_link_libraries(07_test_gps_fusion ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(08_custom_factor gtsam/08_custom_factor.cpp)
+target_link_libraries(08_custom_factor ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(09_between_rotation gtsam/09_between_rotation.cpp)
+target_link_libraries(09_between_rotation ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 
 add_executable(test_icp pcl/test_icp.cpp)
 target_link_libraries(test_icp ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
@@ -78,9 +90,13 @@ add_executable(02_block eigen/02_block.cpp)
 target_link_libraries(02_block ${G2O_LIBRARIES})
 
 add_executable(03_test_pose eigen/03_test_pose.cpp)
+add_executable(t_iteration2 eigen/t_iteration2.cpp)
 
 
 add_executable(03_use_deque cpp_usage/03_use_deque.cpp)
+add_executable(04_map_find cpp_usage/04_map_find.cpp)
+add_executable(05_vector_remove cpp_usage/05_vector_remove.cpp)
+add_executable(06_heap_usage cpp_usage/06_heap_usage.cpp)
 
 add_executable(pcl_deque pcl/pcl_deque.cpp)
 target_link_libraries(pcl_deque ${PCL_LIBRARIES} )

@@ -33,18 +33,29 @@ class MeasureSpeed {
 };
 
 int main(int argc, char *argv[]) {
-  MeasureSpeed ms;
+  ostringstream oss;
+  oss << "w234wtetgererw 2sdg 222 erdfsfer \n";
 
-  double duration = 30;
-  for (int i = 0; i < 100; i++) {
-    Eigen::Vector3d pos(2 * i, 3 * i, 4 * i);
-    Eigen::Vector3d out_v;
-    if (i % 10 == 0) {
-      ms.init(i, pos, 6);
-    }
-    if (ms(i, pos, out_v)) {
-      cout << "v is " << out_v << endl;
-    }
+  oss.flush();
+  int data_idx = static_cast<int>(oss.tellp());
+  vector<uint8_t> v_data;
+  v_data.resize(data_idx);
+
+  string a = oss.str();
+  for (int i = 0; i < data_idx; i++) {
+    v_data[i] = oss.str().c_str()[i];
   }
+  //  v_data.assign(oss.str().begin(), oss.str().end());
+  //  std::copy(oss.str().c_str(), oss.str().c_str() + data_idx, v_data);
+  //  for (auto it = oss.str().begin(); it != oss.str().end(); it++) {
+  //    v_data.emplace_back(*it);
+  //  }
+  //  std::copy(oss.str().begin(), oss.str().end(), v_data.begin());
+  cout << " data is ";
+  for (auto data : v_data) {
+    cout << " " << (char)data;
+  }
+  cout << endl;
+
   return 0;
 }

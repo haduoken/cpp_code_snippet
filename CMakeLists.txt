@@ -33,7 +33,9 @@ target_link_libraries(test_app ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 add_executable(01_hash_map cpp_usage/01_hash_map.cpp)
 add_executable(02_forward_as_tuple cpp_usage/02_forward_as_tuple.cpp)
 
-# GTSAM这一块
+# ********************************************************************
+# ************************          GTSAM           ******************
+# ********************************************************************
 add_executable(01_gtsam gtsam/01_gtsam.cpp)
 target_link_libraries(01_gtsam ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 add_executable(02_gtsam gtsam/02_gtsam.cpp)
@@ -52,12 +54,22 @@ add_executable(08_custom_factor gtsam/08_custom_factor.cpp)
 target_link_libraries(08_custom_factor ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 add_executable(09_between_rotation gtsam/09_between_rotation.cpp)
 target_link_libraries(09_between_rotation ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(10_compose_factor gtsam/10_compose_factor.cpp)
+target_link_libraries(10_compose_factor ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(11_limitz_factor gtsam/11_limitz_factor.cpp)
+target_link_libraries(11_limitz_factor ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
 
+# ********************************************************************
+# ************************          PCL           ******************
+# ********************************************************************
 add_executable(test_icp pcl/test_icp.cpp)
 target_link_libraries(test_icp ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
-
 add_executable(icp_with_trans pcl/icp_with_trans.cpp)
 target_link_libraries(icp_with_trans ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+add_executable(new_point_type pcl/new_point_type.cpp)
+target_link_libraries(new_point_type ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam )
+
+
 
 add_executable(test_iteration eigen/t_iteration.cpp)
 target_link_libraries(test_iteration ${G2O_LIBRARIES} ${Sophus_LIBRARIES} ${OpenCV_LIBRARIES})
@@ -97,6 +109,8 @@ add_executable(03_use_deque cpp_usage/03_use_deque.cpp)
 add_executable(04_map_find cpp_usage/04_map_find.cpp)
 add_executable(05_vector_remove cpp_usage/05_vector_remove.cpp)
 add_executable(06_heap_usage cpp_usage/06_heap_usage.cpp)
+add_executable(07_union_usage  cpp_usage/07_union_usage.cpp)
+add_executable(stl_test  app/stl_test.cpp)
 
 add_executable(pcl_deque pcl/pcl_deque.cpp)
 target_link_libraries(pcl_deque ${PCL_LIBRARIES} )
